@@ -1,0 +1,59 @@
+@font-face {
+    font-family: bebasNeue;
+    src: url(fonts/BebasNeue-Regular.ttf);
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url(fonts/Ubuntu-Regular.ttf);
+}
+
+h1 {
+    font-family: bebasNeue;
+    text-align: center;
+}
+
+button {
+    font-family: Ubuntu;
+    text-align: center;
+    font-size: 0.75rem;
+    height: 2rem;
+    width: 5rem;
+}
+
+div {
+    width: 12rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    text-align: center;
+}
+
+input {
+    width: 2rem;
+    width: 25%;
+    height: 10%;
+    display: inline-block;
+    font-family: Ubuntu;
+    text-align: center;
+    font-size: 1rem;
+}
+
+#input {
+    text-align: center;
+    padding: 1rem;
+    display: inline-block;
+    
+}
+
+p {
+    padding: 0;
+    text-align: center;
+    display: inline-block;
+}
+
+#error {
+    text-align: center;
+    display: inline-block;
+    font-family: Ubuntu;
+    color: red;
+}
