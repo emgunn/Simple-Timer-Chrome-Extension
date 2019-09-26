@@ -12,16 +12,62 @@ let audio = new Audio('sounds/rooster.mp3');
 
 let timer;
 let interval;
+let alarm;
 let countDown = 0;
+let running;
+
+let numHours = 0;
+let numMins = 0;
+let numSecs = 0;
+
+chrome.alarms.onAlarm.addListener(function(alarm) {
+    audio.play();
+    alert(`Ring ring! Your timer for ${numHours} hours, ${numMins} minutes, and ${numSecs} seconds has expired.`, countDown * 1000 + 10);
+});
+
+chrome.storage.local.get(['timeLeft'], function(result) {
+    countDown = result.timeLeft;
+
+    if(countDown === null) {
+        countDown = 0;
+    }
+});
+
+console.log(countDown);
+
+chrome.storage.local.get(['running'], function(result) {
+    runnning = result.running;
+
+
+});
+
+let port = chrome.extension.connect();
+
+port.onDisconnect.addListener(function() {
+    chrome.storage.local.set({timeLeft: countDown});
+})
+
 let timeElapsed = 0;
+
+let currTime = secondsToTime(countDown);
+
+let times = currTime.split(' ');
+
+hours.value = times[0];
+minutes.value = times[1];
+seconds.value = times[2];
 
 button.onclick = startTimer;
 
+if(running) {
+    startTimer();
+}
+
 
 function startTimer() {
-    let numHours = hours.value;
-    let numMins = minutes.value;
-    let numSecs = seconds.value;
+    numHours = hours.value;
+    numMins = minutes.value;
+    numSecs = seconds.value;
 
     if(isNaN(numHours) || isNaN(numMins) || isNaN(numSecs)) {
         error.innerHTML = 'Please enter valid numbers only';
@@ -49,22 +95,26 @@ function startTimer() {
         totalSecs = (numHours * 3600) + (numMins * 60) + (numSecs * 1);
         console.log('Total seconds = ' + totalSecs);
 
-        timer = setTimeout(function() {
-            audio.play();
-            alert(`Ring ring! Your timer for ${numHours} hours, ${numMins} minutes, and ${numSecs} seconds has expired.`);
-        }, totalSecs * 1000 + 10);
+        // timer = setTimeout(function() {
+        //     audio.play();
+        //     alert(`Ring ring! Your timer for ${numHours} hours, ${numMins} minutes, and ${numSecs} seconds has expired.`);
+        // }, totalSecs * 1000 + 10);
+
+        //use Chrome alarm API
+        let alarmTime = Date.now() + (totalSecs * 1000);
+        chrome.alarms.create('Simple Timer', {when: alarmTime});
+
+        //set running to true to pass to background
+        chrome.storage.local.set({running: true});
 
         button.onclick = stopTimer;
         button.innerHTML = 'Stop Timer';
 
         countDown = totalSecs;
 
+        //count one second every 1000 ms
         interval = setInterval(countSecond, 1000);
 
-        chrome.runtime.sendMessage(
-            {greeting: "start", timeLeft: countDown, time: secondsToTime(countDown)},
-            function(response) {
-        });
     }
 }
 
@@ -81,10 +131,8 @@ function stopTimer() {
     button.onclick = startTimer;
     button.innerHTML = 'Start Timer';
 
-    chrome.runtime.sendMessage(
-        {greeting: "stop", timeLeft: countDown, time: secondsToTime(countDown)},
-        function(response) {
-    });
+    chrome.storage.local.set({timeLeft: countDown});
+    chrome.storage.local.set({running: false});
 }
 
 
@@ -122,6 +170,7 @@ function countSecond() {
         }
 
         console.log(countDown);
+        chrome.storage.local.set({timeLeft: countDown});
         countDown--;
         timeElapsed++;
     }
@@ -147,5 +196,24 @@ function secondsToTime(seconds) {
         let s = remaining;
 
         return '' + h + ' ' + m + ' ' + s;
+    }
+}
+
+//requires format: 'h m s'
+function timeToSeconds(time) {
+
+    if(!time instanceof String) {
+        console.log('Passed in value must be of string type');
+        return 0;
+    } 
+    else {
+        let units = time.split(' ');
+        if(units.length != 3) {
+            console.log('Passed in string must have 3 space-delimited words');
+            return 0;
+        }
+        else {
+            return (parseInt(units[0]) * 3600) + (parseInt(units[1] * 60)) + (parseInt(units[2])); 
+        }
     }
 }

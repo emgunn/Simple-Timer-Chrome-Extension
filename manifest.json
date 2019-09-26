@@ -4,7 +4,7 @@
   "description": "Simple timer with alarm in Chrome",
   "version": "0.1",
 
-  "permissions": ["storage"],
+  "permissions": ["storage", "background", "alarms"],
 
   "background": {
     "scripts": ["background.js"],
