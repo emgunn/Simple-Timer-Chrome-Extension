@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Simple Timer",
-  "description": "Simple timer with alarm in Chrome",
+  "description": "Simple timer in Google Chrome",
   "version": "0.1",
 
   "permissions": ["storage", "background", "alarms"],
@@ -14,5 +14,7 @@
   "browser_action": {
     "default_icon": "icons/64.png",
     "default_popup": "popup.html"
-  }
+  },
+
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

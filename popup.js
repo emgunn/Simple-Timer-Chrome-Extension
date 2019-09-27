@@ -7,62 +7,82 @@ let minutes = document.getElementById('minutes');
 let seconds = document.getElementById('seconds');
 let error = document.getElementById('error');
 let button = document.getElementById('startButton');
+let clear = document.getElementById('clearButton');
 
-let audio = new Audio('sounds/rooster.mp3');
-
-let timer;
-let interval;
 let alarm;
 let countDown = 0;
 let running;
 
-let numHours = 0;
-let numMins = 0;
-let numSecs = 0;
+let startTime;
 
-chrome.alarms.onAlarm.addListener(function(alarm) {
-    audio.play();
-    alert(`Ring ring! Your timer for ${numHours} hours, ${numMins} minutes, and ${numSecs} seconds has expired.`, countDown * 1000 + 10);
+let numHours;
+let numMins;
+let numSecs;
+
+chrome.storage.local.get(['hours'], function(result) {
+    hours.value = result.hours;
 });
+chrome.storage.local.get(['minutes'], function(result) {
+    minutes.value = result.minutes;
+});
+chrome.storage.local.get(['seconds'], function(result) {
+    seconds.value = result.seconds;
+});
+chrome.storage.local.get(['running'], function(result) {
+    running = result.running;
+    console.log('App is running: ' + running);
+});
+
+if(running) {
+    button.innerHTML = 'Stop Timer';
+    button.onclick = stopTimer;
+}
+else {
+    button.innerHTML = 'Start Timer';
+    button.onclick = startTimer;
+}
+clear.onclick = clearTimer;
 
 chrome.storage.local.get(['timeLeft'], function(result) {
     countDown = result.timeLeft;
 
-    if(countDown === null) {
+    if(countDown == null) {
         countDown = 0;
     }
 });
 
 console.log(countDown);
 
-chrome.storage.local.get(['running'], function(result) {
-    runnning = result.running;
-
-
-});
 
 let port = chrome.extension.connect();
+
+chrome.runtime.onMessage.addListener(function(message) {
+    if(message['action'] == 'set') {
+        hours.value = message['hours'];
+        minutes.value = message['minutes'];
+        seconds.value = message['seconds'];
+
+        alert('messaged from background received');
+    }
+
+    else if(message['action'] == 'update') {
+        hours.value = message['hours'];
+        minutes.value = message['minutes'];
+        seconds.value = message['seconds'];
+    }
+
+    else if(message['action'] == 'end') {
+        hours.value = null;
+        minutes.value = null;
+        seconds.value = null;
+
+        stopTimer();
+    }
+})
 
 port.onDisconnect.addListener(function() {
     chrome.storage.local.set({timeLeft: countDown});
 })
-
-let timeElapsed = 0;
-
-let currTime = secondsToTime(countDown);
-
-let times = currTime.split(' ');
-
-hours.value = times[0];
-minutes.value = times[1];
-seconds.value = times[2];
-
-button.onclick = startTimer;
-
-if(running) {
-    startTimer();
-}
-
 
 function startTimer() {
     numHours = hours.value;
@@ -93,16 +113,23 @@ function startTimer() {
 
         error.innerHTML = '';
         totalSecs = (numHours * 3600) + (numMins * 60) + (numSecs * 1);
-        console.log('Total seconds = ' + totalSecs);
+        console.log('Total seconds: ' + totalSecs);
 
-        // timer = setTimeout(function() {
-        //     audio.play();
-        //     alert(`Ring ring! Your timer for ${numHours} hours, ${numMins} minutes, and ${numSecs} seconds has expired.`);
-        // }, totalSecs * 1000 + 10);
+        let stopped;
+        chrome.storage.local.get(['stopped'], function(result) {
+            stopped = result.stopped;
+        });
 
-        //use Chrome alarm API
-        let alarmTime = Date.now() + (totalSecs * 1000);
-        chrome.alarms.create('Simple Timer', {when: alarmTime});
+        if(stopped) {
+            chrome.runtime.sendMessage({action: 'resume', hours: numHours, minutes: numMins, seconds: numSecs}, function() {
+
+            });
+        }
+        else {
+            chrome.runtime.sendMessage({action: 'start', hours: numHours, minutes: numMins, seconds: numSecs}, function() {
+
+            });
+        }
 
         //set running to true to pass to background
         chrome.storage.local.set({running: true});
@@ -111,16 +138,10 @@ function startTimer() {
         button.innerHTML = 'Stop Timer';
 
         countDown = totalSecs;
-
-        //count one second every 1000 ms
-        interval = setInterval(countSecond, 1000);
-
     }
 }
 
 function stopTimer() {
-    clearTimeout(timer);
-    clearInterval(interval);
 
     error.innerHTML = 'Timer has been stopped';
 
@@ -131,49 +152,27 @@ function stopTimer() {
     button.onclick = startTimer;
     button.innerHTML = 'Start Timer';
 
-    chrome.storage.local.set({timeLeft: countDown});
-    chrome.storage.local.set({running: false});
+    //set running to false
+    chrome.storage.local.set({timeLeft: countDown, running: false, stopped: true});
+
+    chrome.runtime.sendMessage({action: 'stop'});
 }
 
+function clearTimer() {
+    error.innerHTML = 'Timer cleared';
 
-function countSecond() {
+    hours.value = null;
+    minutes.value = null;
+    seconds.value = null;
+    hours.readOnly = false;
+    minutes.readOnly = false;
+    seconds.readOnly = false;
 
-    if(countDown <= 0) {
-        clearInterval(interval);
+    button.onclick = startTimer;
+    button.innerHTML = 'Start Timer';
 
-        seconds.value = 0;
-
-        error.innerHTML = 'Timer has finished';
-
-        hours.readOnly = false;
-        minutes.readOnly = false;
-        seconds.readOnly = false;
-
-        button.onclick = startTimer;
-        button.innerHTML = 'Start Timer'
-    }
-    else {
-
-        if(seconds.value > 0) {
-            seconds.value--;
-        }
-        else {
-            seconds.value = 59;
-
-            if(minutes.value > 0) {
-                minutes.value--;
-            }
-            else {
-                hours--;
-                minutes.value = 59;
-            }
-        }
-
-        console.log(countDown);
-        chrome.storage.local.set({timeLeft: countDown});
-        countDown--;
-        timeElapsed++;
-    }
+    chrome.storage.local.set({hours: null, minutes: null, seconds: null, running: false, stopped: false});
+    chrome.runtime.sendMessage({action: 'clear'});
 }
 
 function secondsToTime(seconds) {

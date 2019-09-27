@@ -1,62 +1,130 @@
-let countDown = 0;
+chrome.runtime.onInstalled.addListener(function() {
+    chrome.storage.local.set({hours: null, minutes: null, seconds: null}, function() {
+        console.log('Hours, minutes, and seconds initialized.');
+    })
+});
+
 let audio = new Audio('sounds/rooster.mp3');
+
+let countDown = 0;
 let timer;
 let running;
+let hours, minutes, seconds;
 
-chrome.runtime.onConnect.addListener(function(port) {
-    port.onDisconnect.addListener(function() {
+let alarmTime;
 
-        chrome.storage.local.get(['timeLeft'], function(data) {
-            countDown = data.timeLeft
+let alarm;
 
-            console.log(countDown);
+let startHours, startMinutes, startSeconds;
 
-        });
+let secondsLeft;
 
-        chrome.storage.local.get(['running'], function(data) {
-            running = data.running;
+let interval;
 
-            console.log(running);
-        }) 
-    });
+chrome.storage.local.get(['hours'], function(data) {
+    hours = parseInt(data.hours);
+    
 });
 
-chrome.runtime.onStartup.addListener(function() {
-
-    chrome.storage.local.set({timeLeft: countDown})
-    //delete timer
-
+chrome.storage.local.get(['minutes'], function(data) {
+    minutes = parseInt(data.minutes);
 });
 
-chrome.runtime.onMessage.addListener(
-    function(request) {
+chrome.storage.local.get(['seconds'], function(data) {
+    seconds = parseInt(data.seconds);
+});
 
-        let countDown = 0;
+chrome.storage.local.get(['running'], function(data) {
+    running = data.running;
+});
 
-        chrome.storage.local.get(['timeLeft'], function(result) {
-            countDown = result.timeLeft;
-        });
+// chrome.runtime.onConnect.addListener(function(port) {
+
+//     port.onDisconnect.addListener(function() {
+
+//         chrome.storage.local.get(['timeLeft'], function(data) {
+//             countDown = data.timeLeft
+
+//             console.log('countDown: ' + countDown);
+
+//         });
+
+//         chrome.storage.local.get(['running'], function(data) {
+//             running = data.running;
+
+//             console.log('is running? ' + running);
+//         }) 
+//     });
+// });
+
+// chrome.runtime.onStartup.addListener(function() {
+
+//     chrome.runtime.sendMessage({action: 'set', hours: hours, minutes: minutes, seconds: seconds});
+
+//     chrome.storage.local.set({hours: hours, minutes: minutes, seconds: seconds});
+
+//     chrome.storage.local.get(['running'], function(data) {
+//         running = data.running;
+
+//         console.log('is running? ' + running);
+//     }) 
+// });
+
+chrome.alarms.onAlarm.addListener(function(alarm) {
+    audio.play();
+    running = false;
+
+    chrome.storage.local.set({hours: null, minutes: null, seconds: null, running: running, stopped: false});
+
+    alert(`Ring ring! Your timer for ${startHours} hours, ${startMinutes} minutes, and ${startSeconds} seconds has expired.`, countDown * 1000 + 10);
+});
+
+
+chrome.runtime.onMessage.addListener(function(message) {
 
         console.log(countDown);
 
-        if (request.greeting === 'start') {
+        if(message['action'] == 'start') {
+            startHours = parseInt(message['hours']);
+            startMinutes = parseInt(message['minutes']);
+            startSeconds = parseInt(message['seconds']);
+            secondsLeft = (startHours * 3600) + (startMinutes * 60) + (startSeconds * 1);
 
+            running = true;
+            chrome.storage.local.set({running: running});
 
-            let units = secondsToTime(countDown).split(' ');
-            let ints = [];
+            console.log('SECONDS LEFT: ' + secondsLeft);
+            interval = setInterval(countSecond, 1000);
 
-            for(var i = 0; i < 3; i++) {
-                ints[i] = parseInt(units[i]);
-            }
-
-            let timer = setTimeout(function() {
-                audio.play();
-                alert(`Ring ring! Your timer for ${ints[0]} hours, ${ints[1]} minutes, and ${ints[2]} seconds has expired.`);
-            }, countDown * 1000 + 10);
-    
+             //use Chrome alarm API
+            alarmTime = Date.now() + (secondsLeft * 1000);
+            chrome.alarms.create('Simple Timer', {when: alarmTime});
         }
-        else if(request.greeting === 'stop') {
+        else if(message.action == 'stop') {
+            clearInterval(interval);
+            chrome.alarms.clearAll(function() {
 
+            });
+            running = false;
+            chrome.storage.local.set({running: running});
+        }
+
+        else if(message.action == 'resume') {
+            alarmTime = Date.now() + (secondsLeft * 1000);
+            chrome.alarms.create('Simple Timer', {when: alarmTime});
+            interval = setInterval(countSecond, 1000);
+
+            running = true;
+            chrome.storage.local.set({running: running});
+        }
+
+        else if(message.action == 'clear') {
+            clearInterval(interval);
+            chrome.alarms.clearAll(function() {
+
+            });
+            running = false;
+            chrome.storage.local.set({running: running});
         }
     });
 
@@ -81,4 +149,31 @@ function secondsToTime(seconds) {
 
         return '' + h + ' ' + m + ' ' + s;
     }
+}
+
+
+function countSecond() {
+    if(secondsLeft <= 0) {
+        console.log('Time left: ' + secondsLeft + ' seconds');
+        clearInterval(interval);
+
+        chrome.runtime.sendMessage({action: 'end'}, function(){
+
+        });
+
+        return;
+    }
+
+    secondsLeft--;
+
+    let units = secondsToTime(secondsLeft).split(' ');
+    hours = units[0];
+    minutes = units[1];
+    seconds = units[2];
+
+    chrome.runtime.sendMessage({action: 'update', hours: hours, minutes: minutes, seconds: seconds});
+
+    chrome.storage.local.set({hours: hours, minutes: minutes, seconds: seconds})
+    
+    console.log('Time left: ' + secondsLeft + ' seconds');
 }
