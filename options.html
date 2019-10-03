@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple Timer Preferences</title>
+
+    <link rel="icon" href="icons/64.png">
+    <link href="options.css" rel="stylesheet">
+</head>
+<body>
+    <div id="header">
+        <img id="logo" src="icons/64.png">
+        <span>Simple Timer extension preferences</span>
+    </div>
+
+    <div id="content">
+        <div id="color-setting" class="option-row">
+            <div id="color-setting-text" class="option">Background color</div>
+            <div class="option-values">
+                <select id="color">
+                    <option value="black">black</option>
+                    <option value="blue">blue</option>
+                    <option value="brown">brown</option>
+                    <option value="rgb(245, 233, 196)">cream</option>
+                    <option value="rgb(102, 255, 0)">lime</option>
+                    <option value="gray">gray</option>
+                    <option value="green">green</option>
+                    <option value="orange">orange</option>
+                    <option value="pink">pink</option>
+                    <option value="purple">purple</option>
+                    <option value="red">red</option>
+                    <option value="white">white</option>
+                    <option value="yellow">yellow</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="alarm-sound" class="option-row">
+            <div id="alarm-sound-text" class="option">Alarm sound</div>
+            <div class="option-values">
+                    <select id="sound">
+                        <option value="sounds/rooster.mp3">rooster</option>
+                        <option value="sounds/fire alarm.mp3">fire alarm</option>
+                        <option value="sounds/cowbell.mp3">cowbell</option>
+                    </select>
+                </div>
+        </div>
+
+        <div id="save-settings">
+            <button id="apply">Apply and save</button>
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

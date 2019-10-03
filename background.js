@@ -5,6 +5,9 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 let audio = new Audio('sounds/rooster.mp3');
+chrome.storage.local.get(['sound'], function(data) {
+    audio = new Audio(data.sound);
+});
 
 let countDown = 0;
 let timer;
@@ -23,7 +26,6 @@ let interval;
 
 chrome.storage.local.get(['hours'], function(data) {
     hours = parseInt(data.hours);
-    
 });
 
 chrome.storage.local.get(['minutes'], function(data) {
@@ -38,24 +40,24 @@ chrome.storage.local.get(['running'], function(data) {
     running = data.running;
 });
 
-// chrome.runtime.onConnect.addListener(function(port) {
+chrome.runtime.onConnect.addListener(function(port) {
 
-//     port.onDisconnect.addListener(function() {
+    port.onDisconnect.addListener(function() {
 
-//         chrome.storage.local.get(['timeLeft'], function(data) {
-//             countDown = data.timeLeft
+        // chrome.storage.local.get(['timeLeft'], function(data) {
+        //     countDown = data.timeLeft
 
-//             console.log('countDown: ' + countDown);
+        //     console.log('countDown: ' + countDown);
 
-//         });
+        // });
 
-//         chrome.storage.local.get(['running'], function(data) {
-//             running = data.running;
+        chrome.storage.local.get(['running'], function(data) {
+            running = data.running;
 
-//             console.log('is running? ' + running);
-//         }) 
-//     });
-// });
+            console.log('is running? ' + running);
+        }) 
+    });
+});
 
 // chrome.runtime.onStartup.addListener(function() {
 
@@ -106,7 +108,7 @@ chrome.runtime.onMessage.addListener(function(message) {
 
             });
             running = false;
-            chrome.storage.local.set({running: running});
+            chrome.storage.local.set({running: running, stopped: true});
         }
 
         else if(message.action == 'resume') {
@@ -124,7 +126,13 @@ chrome.runtime.onMessage.addListener(function(message) {
 
             });
             running = false;
-            chrome.storage.local.set({running: running});
+            chrome.storage.local.set({running: running, stopped: false});
+        }
+
+        else if(message.action == 'settings') {
+            chrome.storage.local.get(['sound'], function(data) {
+                audio = new Audio(data.sound);
+            });
         }
     });
 

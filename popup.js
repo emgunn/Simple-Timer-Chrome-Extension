@@ -19,6 +19,27 @@ let numHours;
 let numMins;
 let numSecs;
 
+//get popup settings
+chrome.storage.local.get(['color'], function(result) {
+    document.body.style.backgroundColor = result.color;
+    if(result.color == 'red') {
+        error.style.color = 'white';
+    }
+    else {
+        error.style.color = 'red';
+    }
+    if(result.color == 'blue' || result.color == 'red' ||
+        result.color == 'green' || result.color == 'gray' ||
+        result.color == 'brown' || result.color == 'black' ||
+        result.color == 'purple') {
+        title.style.color = 'white';
+    }
+    else {
+        title.style.color = 'black';
+    }
+    console.log(result.color);
+});
+
 chrome.storage.local.get(['hours'], function(result) {
     hours.value = result.hours;
 });
@@ -30,17 +51,19 @@ chrome.storage.local.get(['seconds'], function(result) {
 });
 chrome.storage.local.get(['running'], function(result) {
     running = result.running;
-    console.log('App is running: ' + running);
+    console.log('Timer is running: ' + running);
+
+    if(running) {
+        
+        button.innerHTML = 'Stop Timer';
+        button.onclick = stopTimer;
+    }
+    else {
+        button.innerHTML = 'Start Timer';
+        button.onclick = startTimer;
+    }
 });
 
-if(running) {
-    button.innerHTML = 'Stop Timer';
-    button.onclick = stopTimer;
-}
-else {
-    button.innerHTML = 'Start Timer';
-    button.onclick = startTimer;
-}
 clear.onclick = clearTimer;
 
 chrome.storage.local.get(['timeLeft'], function(result) {

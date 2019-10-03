@@ -9,8 +9,12 @@
 }
 
 h1 {
-    font-family: bebasNeue;
+    font-family: Ubuntu;
     text-align: center;
+}
+
+body {
+    background-color: white;
 }
 
 button {
